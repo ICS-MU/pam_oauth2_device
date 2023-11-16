@@ -142,6 +142,12 @@ void make_authorization_request(const char *client_id,
   curl_easy_setopt(curl, CURLOPT_POSTFIELDS, params.c_str());
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+
+  std::string json_header = "Accept: application/json";
+  struct curl_slist *headers = NULL;
+  headers = curl_slist_append(headers, json_header.c_str());
+  curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
   res = curl_easy_perform(curl);
   curl_easy_cleanup(curl);
   if (res != CURLE_OK) {
@@ -152,11 +158,18 @@ void make_authorization_request(const char *client_id,
     auto data = json::parse(readBuffer);
     response->user_code = data.at("user_code");
     response->device_code = data.at("device_code");
-    response->verification_uri = data.at("verification_uri");
-    if (data.find("verification_uri_complete") != data.end()) {
-      response->verification_uri_complete =
-          data.at("verification_uri_complete");
+    // NOTE: Google uses verification_url instead of verification_uri
+    if (data.find("verification_url") != data.end()) {
+      response->verification_uri = data.at("verification_url");
     }
+    else {
+      response->verification_uri = data.at("verification_uri");
+      if (data.find("verification_uri_complete") != data.end()) {
+        response->verification_uri_complete =
+            data.at("verification_uri_complete");
+      }
+    }
+    
   } catch (json::exception &e) {
     syslog(LOG_ERR, "make_authorization_request: json parse failed, error=%s",
            e.what());
@@ -197,6 +210,11 @@ void poll_for_token(const char *client_id, const char *client_secret,
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, params.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+
+    std::string json_header = "Accept: application/json";
+    struct curl_slist *headers = NULL;
+    headers = curl_slist_append(headers, json_header.c_str());
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
     res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
@@ -240,10 +258,12 @@ void get_userinfo(const char *userinfo_endpoint, const char *token,
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
 
+  std::string json_header = "Accept: application/json";
   std::string auth_header = "Authorization: Bearer ";
   auth_header += token;
   struct curl_slist *headers = NULL;
   headers = curl_slist_append(headers, auth_header.c_str());
+  headers = curl_slist_append(headers, json_header.c_str());
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
   res = curl_easy_perform(curl);
