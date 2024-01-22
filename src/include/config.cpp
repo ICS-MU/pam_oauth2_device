@@ -37,16 +37,27 @@ void Config::load(const char *path) {
     ldap_filter = j.at("ldap").at("filter").get<std::string>();
     ldap_attr = j.at("ldap").at("attr").get<std::string>();
   }
+  json users_json;
   if (j.find("users") != j.end()) {
-    for (auto &element : j["users"].items()) {
-      for (auto &local_user : element.value()) {
-        if (usermap.find(element.key()) == usermap.end()) {
-          std::set<std::string> userset;
-          userset.insert((std::string)local_user);
-          usermap[element.key()] = userset;
-        } else {
-          usermap[element.key()].insert((std::string)local_user);
-        }
+    users_json = j.at("users");
+    Config::fill_user_map_from_json(usermap, j);
+  } else if (j.find("usersFilePath") != j.end()) {
+    std::string users_path = j.at("usersFilePath").get<std::string>();
+    std::ifstream users_fstream(users_path);
+    users_fstream >> users_json;
+    Config::fill_user_map_from_json(usermap, j);
+  }
+}
+
+void Config::fill_user_map_from_json(std::map<std::string, std::set<std::string>>& user_map, json& j) {
+  for (auto const &element : j["users"].items()) {
+    for (auto const &local_user : element.value()) {
+      if (user_map.find(element.key()) == user_map.end()) {
+        std::set<std::string> userset;
+        userset.insert((std::string)local_user);
+        user_map[element.key()] = userset;
+      } else {
+        user_map[element.key()].insert((std::string)local_user);
       }
     }
   }

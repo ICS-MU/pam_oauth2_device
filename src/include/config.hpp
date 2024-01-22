@@ -5,6 +5,10 @@
 #include <set>
 #include <string>
 
+#include "nlohmann/json.hpp"
+
+using json = nlohmann::json;
+
 class Config {
  public:
   void load(const char *path);
@@ -15,6 +19,8 @@ class Config {
   std::set<std::string> ldap_hosts;
   int qr_error_correction_level;
   std::map<std::string, std::set<std::string>> usermap;
+ private:
+  void fill_user_map_from_json(std::map<std::string, std::set<std::string>>& user_map, json& j);
 };
 
 #endif  // PAM_OAUTH2_DEVICE_CONFIG_HPP

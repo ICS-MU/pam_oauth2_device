@@ -34,8 +34,9 @@ Edit `/etc/pam_oauth2_device/config.json`.
     - 0 - low
     - 1 - medium
     - 2 - high
-- `users` User mapping from claim configured in _username_attribute_
-  to the local account name.
+- `users` User mapping from claim configured in _username_attribute_ to the local account name.
+- `usersFilePath` Path to a JSON file containing user mappings. An alternative to the `users` option
+of the module configuration file.
 - `oauth` configuration for the OIDC identity provider.
   - `require_mfa`: if `true` the module will modify the requests to ask
     user to perform the MFA.
