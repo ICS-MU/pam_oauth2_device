@@ -38,7 +38,7 @@ class Config {
   // functions
   void load(const char *path);
  private:
-  static void fill_user_map_from_json(std::map<std::string, std::set<std::string>>& user_map, json& j);
+  void fill_user_map_from_json(json& j);
 };
 
 #endif  // PAM_OAUTH2_DEVICE_CONFIG_HPP

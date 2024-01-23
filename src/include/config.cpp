@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <set>
+#include <syslog.h>
 
 #include "nlohmann/json.hpp"
 
@@ -44,23 +45,23 @@ void Config::load(const char *path) {
   json users_json;
   if (j.find("users") != j.end()) {
     users_json = j.at("users");
-    Config::fill_user_map_from_json(usermap, j);
+    Config::fill_user_map_from_json(users_json);
   } else if (j.find("usersFilePath") != j.end()) {
     string users_path = j.at("usersFilePath").get<string>();
     ifstream users_fstream(users_path);
     users_fstream >> users_json;
-    Config::fill_user_map_from_json(usermap, j);
+    Config::fill_user_map_from_json(users_json);
   }
 }
 
-void Config::fill_user_map_from_json(map<string, set<string>>& user_map, json& j) {
+void Config::fill_user_map_from_json(json& j) {
   for (auto const &element : j["users"].items()) {
     for (auto const &local_user : element.value()) {
-      if (user_map.find(element.key()) == user_map.end()) {
+      if (usermap.find(element.key()) == usermap.end()) {
         set<string> userset;
-        user_map[element.key()] = userset;
+        usermap[element.key()] = userset;
       }
-      user_map[element.key()].insert((string)local_user);
+      usermap[element.key()].insert((string)local_user);
     }
   }
 }
