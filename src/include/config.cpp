@@ -2,52 +2,66 @@
 
 #include <fstream>
 #include <set>
+#include <syslog.h>
 
 #include "nlohmann/json.hpp"
 
+using namespace std;
 using json = nlohmann::json;
 
 void Config::load(const char *path) {
-  std::ifstream config_fstream(path);
+  ifstream config_fstream(path);
   json j;
   config_fstream >> j;
+  
+  json oauth_json = j.at("oauth");
 
-  client_id = j.at("oauth").at("client").at("id").get<std::string>();
-  client_secret = j.at("oauth").at("client").at("secret").get<std::string>();
-  scope = j.at("oauth").at("scope").get<std::string>();
-  device_endpoint = j.at("oauth").at("device_endpoint").get<std::string>();
-  token_endpoint = j.at("oauth").at("token_endpoint").get<std::string>();
-  userinfo_endpoint = j.at("oauth").at("userinfo_endpoint").get<std::string>();
-  username_attribute =
-      j.at("oauth").at("username_attribute").get<std::string>();
-  require_mfa = j["oauth"].contains("require_mfa")
-                    ? j.at("oauth").at("require_mfa").get<bool>()
-                    : false;
+  client_id = oauth_json.at("client").at("id").get<string>();
+  client_secret = oauth_json.at("client").at("secret").get<string>();
+  scope = oauth_json.at("scope").get<string>();
+  device_endpoint = oauth_json.at("device_endpoint").get<string>();
+  token_endpoint = oauth_json.at("token_endpoint").get<string>();
+  userinfo_endpoint = oauth_json.at("userinfo_endpoint").get<string>();
+  username_attribute = oauth_json.at("username_attribute").get<string>();
+  require_mfa = oauth_json.contains("require_mfa") && oauth_json.at("require_mfa").get<bool>();
+  
+  json qr_json = j.at("qr");
   qr_error_correction_level =
-      j.at("qr").at("error_correction_level").get<int>();
-  qr_show =
-      (j["qr"].contains("show")) ? j.at("qr").at("show").get<bool>() : true;
-  if (j.find("ldap") != j.end() && j["ldap"].find("hosts") != j["ldap"].end()) {
-    for (auto &host : j["ldap"]["hosts"]) {
-      ldap_hosts.insert((std::string)host);
+      qr_json.at("error_correction_level").get<int>();
+  qr_show = qr_json.contains("show") && qr_json.at("show").get<bool>();
+
+  if (j.find("ldap") != j.end() && j.at("ldap").find("hosts") != j.at("ldap").end()) {
+    json ldap_json = j.at("ldap");
+    for (auto const &host : ldap_json.at("hosts")) {
+      ldap_hosts.insert((string)host);
     }
-    ldap_basedn = j.at("ldap").at("basedn").get<std::string>();
-    ldap_user = j.at("ldap").at("user").get<std::string>();
-    ldap_passwd = j.at("ldap").at("passwd").get<std::string>();
-    ldap_filter = j.at("ldap").at("filter").get<std::string>();
-    ldap_attr = j.at("ldap").at("attr").get<std::string>();
+    ldap_basedn = ldap_json.at("basedn").get<string>();
+    ldap_user = ldap_json.at("user").get<string>();
+    ldap_passwd = ldap_json.at("passwd").get<string>();
+    ldap_filter = ldap_json.at("filter").get<string>();
+    ldap_attr = ldap_json.at("attr").get<string>();
   }
+
+  json users_json;
   if (j.find("users") != j.end()) {
-    for (auto &element : j["users"].items()) {
-      for (auto &local_user : element.value()) {
-        if (usermap.find(element.key()) == usermap.end()) {
-          std::set<std::string> userset;
-          userset.insert((std::string)local_user);
-          usermap[element.key()] = userset;
-        } else {
-          usermap[element.key()].insert((std::string)local_user);
-        }
+    users_json = j.at("users");
+    Config::fill_user_map_from_json(users_json);
+  } else if (j.find("usersFilePath") != j.end()) {
+    string users_path = j.at("usersFilePath").get<string>();
+    ifstream users_fstream(users_path);
+    users_fstream >> users_json;
+    Config::fill_user_map_from_json(users_json);
+  }
+}
+
+void Config::fill_user_map_from_json(json& j) {
+  for (auto const &element : j["users"].items()) {
+    for (auto const &local_user : element.value()) {
+      if (usermap.find(element.key()) == usermap.end()) {
+        set<string> userset;
+        usermap[element.key()] = userset;
       }
+      usermap[element.key()].insert((string)local_user);
     }
   }
 }

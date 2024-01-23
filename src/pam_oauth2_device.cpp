@@ -59,20 +59,21 @@ std::string getQr(const char *text, const int ecc = 0, const int border = 1) {
       qrcodegen::QrCode::encodeText(text, error_correction_level);
 
   std::ostringstream oss;
-  int i, j, size, top, bottom;
-  size = qr.getSize();
-  for (j = -border; j < size + border; j += 2) {
-    for (i = -border; i < size + border; ++i) {
-      top = qr.getModule(i, j);
-      bottom = qr.getModule(i, j + 1);
+
+  int size = qr.getSize();
+  for (int j = -border; j < size + border; j += 2) {
+    for (int i = -border; i < size + border; ++i) {
+      int top = qr.getModule(i, j);
+      int bottom = qr.getModule(i, j + 1);
+
       if (top && bottom) {
-        oss << "\033[40;97m \033[0m";
-      } else if (top && !bottom) {
-        oss << "\033[40;97m\u2584\033[0m";
-      } else if (!top && bottom) {
-        oss << "\033[40;97m\u2580\033[0m";
+        oss << " ";
+      } else if (top != 0) {
+        oss << "\u2584";
+      } else if (bottom != 0) {
+        oss << "\u2580";
       } else {
-        oss << "\033[40;97m\u2588\033[0m";
+        oss << "\u2588";
       }
     }
     oss << std::endl;
