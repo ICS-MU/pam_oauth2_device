@@ -6,8 +6,10 @@
 #include <syslog.h>
 
 #include <chrono>
+#include <cstdio>
 #include <regex>
 #include <sstream>
+#include <string>
 #include <thread>
 
 #include "include/config.hpp"
@@ -305,7 +307,7 @@ bool is_authorized(const Config &config, const std::string &username_local,
                    const std::string &user_acr) {
   // Check performing MFA
   if (config.require_mfa) {
-    if (strstr(user_acr.c_str(), "https://refeds.org/profile/mfa") != NULL) {
+    if (strstr(user_acr.c_str(), "https://refeds.org/profile/mfa") == NULL) {
       syslog(LOG_WARNING, "user %s did not perform MFA",
              username_remote.c_str());
       return false;

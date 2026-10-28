@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <set>
+#include <string>
 
 #include "nlohmann/json.hpp"
 
