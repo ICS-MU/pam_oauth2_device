@@ -6,8 +6,10 @@
 #include <syslog.h>
 
 #include <chrono>
+#include <cstdio>
 #include <regex>
 #include <sstream>
+#include <string>
 #include <thread>
 
 #include "include/config.hpp"
